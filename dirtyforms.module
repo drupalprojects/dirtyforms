@@ -1,0 +1,63 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Checks forms before users leave the page, warning them if they are about
+ * to loose changes and providing an option to remain on the page.
+ */
+
+/**
+ * Implementation of hook_help().
+ */
+function dirtyforms_help($path, $arg) {
+  if ($path == 'admin/settings/dirtyforms') {
+    return '<p>'. t('Configure Dirty Forms settings.') .'</p>';
+  }
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function dirtyforms_menu() {
+  $items = array();
+  $items['admin/settings/dirtyforms'] = array(
+    'title' => 'Dirty Forms',
+    'description' => 'Configure Dirty Forms settings.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('dirtyforms_admin_settings'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'dirtyforms.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function dirtyforms_form_alter(&$form, $form_state, $form_id) {
+  if (!dirtyforms_is_form_excluded($form_id, $form)) {
+    dirtyforms_add_js();
+  }
+}
+
+/**
+ * Check whether a form is excluded from the dirtyForms behavior.
+ */
+function dirtyforms_is_form_excluded($form_id, &$form) {
+  // @TODO
+  return FALSE;
+}
+
+
+/**
+ * Add the dirtyForms javascript to the page (just once).
+ */
+function dirtyforms_add_js() {
+  static $added = FALSE;
+  if (!$added) {
+    $added = TRUE;
+    drupal_add_js(drupal_get_path('module', 'dirtyforms') .'/dirtyforms.js');
+  }
+}

@@ -1,0 +1,6 @@
+; $Id$
+name = Dirty Forms
+description = Checks forms before users leave the page, warning them if they are about to loose changes and providing an option to remain on the page.
+package = User interface
+dependencies[] = onbeforeunload
+core = 6.x
