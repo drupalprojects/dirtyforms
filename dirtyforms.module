@@ -3,7 +3,7 @@
 
 /**
  * @file
- * Checks forms before users leave the page, warning them if they are about
+ * Check forms before users leave the page, warning them if they are about
  * to loose changes and providing an option to remain on the page.
  */
 
@@ -37,26 +37,74 @@ function dirtyforms_menu() {
  * Implementation of hook_form_alter().
  */
 function dirtyforms_form_alter(&$form, $form_state, $form_id) {
-  if (!dirtyforms_is_form_excluded($form_id, $form)) {
-    dirtyforms_add_js();
+  static $settings;
+  if (!isset($settings)) {
+    $settings = _dirtyforms_get_settings();
   }
-}
-
-/**
- * Check whether a form is excluded from the dirtyForms behavior.
- */
-function dirtyforms_is_form_excluded($form_id, &$form) {
-  // @TODO
-  return FALSE;
+  if ($settings['form_ids_policy'] == 'blacklist') {
+    if (_dirtyforms_match_rules($form_id, $settings['form_ids_rules'])) {
+      _dirtyforms_exclude_form($form);
+    }
+    _dirtyforms_add_js();
+  }
+  elseif ($settings['form_ids_policy'] == 'whitelist') {
+    if (!_dirtyforms_match_rules($form_id, $settings['form_ids_rules'])) {
+      _dirtyforms_exclude_form($form);
+    }
+    _dirtyforms_add_js();
+  }
 }
 
 /**
  * Add the dirtyForms javascript to the page (just once).
  */
-function dirtyforms_add_js() {
+function _dirtyforms_add_js() {
   static $added = FALSE;
   if (!$added) {
     $added = TRUE;
     drupal_add_js(drupal_get_path('module', 'dirtyforms') .'/dirtyforms.js');
   }
+}
+
+/**
+ * Check a string against a list of rules.
+ */
+function _dirtyforms_match_rules($string, $rules) {
+  foreach ($rules as $rule) {
+    if (preg_match('`^'. str_replace('*', '.*', $rule) .'$`', $string)) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * Assign the exclude CSS class to the given form.
+ */
+function _dirtyforms_exclude_form(&$form) {
+  if (!isset($form['#attributes'])) {
+    $form['#attributes'] = array();
+  }
+  if (empty($form['#attributes']['class'])) {
+    $form['#attributes']['class'] = 'dirtyforms-exclude';
+  }
+  else {
+    $form['#attributes']['class'] .= ' dirtyforms-exclude';
+  }
+}
+
+/**
+ * Get module settings.
+ */
+function _dirtyforms_get_settings() {
+  return array(
+    'form_ids_policy' => variable_get('dirtyforms_form_ids_policy', 'blacklist'),
+    'form_ids_rules' => variable_get('dirtyforms_form_ids_rules', array(
+      'search_theme*',
+      'search_block*',
+      'user_login*',
+      'user_register*',
+      'user_pass*',
+    )),
+  );
 }

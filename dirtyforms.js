@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Checks forms before users leave the page, warning them if they are about
+ * Check forms before users leave the page, warning them if they are about
  * to loose changes and providing an option to remain on the page.
  *
  * The following element types are processed (unless they are excluded):
@@ -42,7 +42,7 @@ Drupal.behaviors.dirtyForms = function(context) {
  * Private properties and methods are prefixed with an underscore.
  */
 Drupal.dirtyForms = Drupal.dirtyForms || {
-  warning: Drupal.t('If you leave this page now your changes will be lost.'),
+  warning: Drupal.t('Your changes will be lost if you leave this page now.'),
   isSubmitted: false,
   _excludedElementTypes: ['submit', 'button', 'reset', 'image', 'file'],
   _savedElements: {},
@@ -284,7 +284,7 @@ Drupal.dirtyForms._WYSIWYG.isEditor = function(element) {
   if (element.type != 'textarea') {
     return false;
   }
-  if (tinyMCE != undefined) {
+  if (typeof tinyMCE == 'object' && typeof tinyMCE.get == 'function') {
     var editor = tinyMCE.get(element.id);
     if (editor && editor.isDirty) {
       return {type: 'tinymce', editor: editor, element: element};
