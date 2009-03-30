@@ -279,24 +279,35 @@ Drupal.dirtyForms._isElementChanged = function(currentElement, savedElement) {
 
 /**
  * Find out if the element is a WYSIWYG Textarea.
+ *
+ * @todo: Add support for more editors. Please, give me links to APIs. Thanks! ;-)
+ *
+ * @link http://wiki.moxiecode.com/index.php/TinyMCE:API/tinymce.EditorManager/get
+ * @link http://wiki.moxiecode.com/index.php/TinyMCE:API/tinymce.Editor
+ * @link http://docs.fckeditor.net/FCKeditor_2.x/Developers_Guide/JavaScript_API
+ * @link http://developer.yahoo.com/yui/docs/YAHOO.widget.EditorInfo.html
+ * @link http://developer.yahoo.com/yui/docs/YAHOO.widget.SimpleEditor.html
  */
 Drupal.dirtyForms._WYSIWYG.isEditor = function(element) {
+  var editor;
   if (element.type != 'textarea') {
     return false;
   }
   if (typeof tinyMCE == 'object' && typeof tinyMCE.get == 'function') {
-    var editor = tinyMCE.get(element.id);
-    if (editor && editor.isDirty) {
+    if ((editor = tinyMCE.get(element.id)) && editor.isDirty) {
       return {type: 'TinyMCE', editor: editor, element: element};
     }
   }
   if (typeof FCKeditorAPI == 'object' && typeof FCKeditorAPI.GetInstance == 'function') {
-    var editor = FCKeditorAPI.GetInstance(element.id);
-    if (editor && editor.isDirty) {
+    if ((editor = FCKeditorAPI.GetInstance(element.id)) && editor.isDirty) {
       return {type: 'FCKeditor', editor: editor, element: element};
     }
   }
-  // @TODO: Add support for more WYSIWYG editors.
+  if (YAHOO && YAHOO.widget && YAHOO.widget.EditorInfo && YAHOO.widget.EditorInfo.getEditorById) {
+    if (editor = YAHOO.widget.EditorInfo.getEditorById(element.id)) {
+      return {type: 'yui', editor: editor, element: element};
+    }
+  }
   return false;
 };
 
@@ -310,6 +321,10 @@ Drupal.dirtyForms._WYSIWYG.isDirty = function(editorInfo) {
       return true;
     }
   }
-  // @TODO: Add support for more WYSIWYG editors.
+  else if (editorInfo.type == 'yui') {
+    if (editorInfo.editor.editorDirty) {
+      return true;
+    }
+  }
   return false;
 };
