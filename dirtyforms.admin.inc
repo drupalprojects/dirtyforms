@@ -27,7 +27,6 @@ function dirtyforms_admin_settings() {
       'blacklist' => t('Blacklist - Process all forms, except those matching the rules specified below.'),
     ),
     '#default_value' => $settings['form_ids_policy'],
-    '#description' => t('If you choose the whitelist option, be sure to add your own domain names to the list!'),
   );
   $form['form_id_filters']['dirtyforms_form_ids_rules'] = array(
     '#type' => 'textarea',
@@ -36,6 +35,19 @@ function dirtyforms_admin_settings() {
     '#cols' => 60,
     '#rows' => min(20, max(10, count($settings['form_ids_rules']) + 2)),
     '#description' => t('Enter a comma separated list of expressions to match against Form IDs. Each expression may contain any number of alphanumeric characters (a-z0-9), hiphens (-), underscores (_) or the asterisk wildcard character (*).'),
+  );
+  $form['troubleshooting'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Troubleshooting'),
+    '#collapsible' => TRUE,
+    '#collapsed' => !$settings['troubleshooting_alerts'],
+    '#description' => t('Options for helping track issues with the client-side code.'),
+  );
+  $form['troubleshooting']['dirtyforms_troubleshooting_alerts'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Enable javascript alerts'),
+    '#default_value' => $settings['troubleshooting_alerts'],
+    '#description' => t('When this option is enabled, an alert will tell you additional information about the element that caused the onBeforeUnload dialog to appear.'),
   );
   $form = system_settings_form($form);
   if (!isset($form['#validate'])) {

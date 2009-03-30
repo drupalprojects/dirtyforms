@@ -45,23 +45,29 @@ function dirtyforms_form_alter(&$form, $form_state, $form_id) {
     if (_dirtyforms_match_rules($form_id, $settings['form_ids_rules'])) {
       _dirtyforms_exclude_form($form);
     }
-    _dirtyforms_add_js();
+    _dirtyforms_add_js($settings);
   }
   elseif ($settings['form_ids_policy'] == 'whitelist') {
     if (!_dirtyforms_match_rules($form_id, $settings['form_ids_rules'])) {
       _dirtyforms_exclude_form($form);
     }
-    _dirtyforms_add_js();
+    _dirtyforms_add_js($settings);
   }
 }
 
 /**
  * Add the dirtyForms javascript to the page (just once).
  */
-function _dirtyforms_add_js() {
+function _dirtyforms_add_js($settings) {
   static $added = FALSE;
   if (!$added) {
     $added = TRUE;
+    if ($settings['troubleshooting_alerts']) {
+      $js_settings = array(
+        'troubleshooting_alerts' => $settings['troubleshooting_alerts'],
+      );
+      drupal_add_js(array('dirtyForms' => $js_settings), 'setting');
+    }
     drupal_add_js(drupal_get_path('module', 'dirtyforms') .'/dirtyforms.js');
   }
 }
@@ -106,5 +112,6 @@ function _dirtyforms_get_settings() {
       'user_register*',
       'user_pass*',
     )),
+    'troubleshooting_alerts' => variable_get('dirtyforms_troubleshooting_alerts', 0),
   );
 }

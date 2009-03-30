@@ -31,6 +31,11 @@ Drupal.behaviors.dirtyForms = function(context) {
     // Install our onBeforeUnload callback.
     Drupal.onBeforeUnload.addCallback('dirtyforms', Drupal.dirtyForms._onBeforeUnload);
 
+    // Troubleshooting...
+    if (Drupal.settings.dirtyForms && Drupal.settings.dirtyForms.troubleshooting_alerts) {
+      Drupal.dirtyForms._alert = function(m) { alert(m) };
+    }
+
     // Save state of all non-excluded forms in the document.
     Drupal.dirtyForms.saveState(context);
   }
@@ -44,6 +49,7 @@ Drupal.behaviors.dirtyForms = function(context) {
 Drupal.dirtyForms = Drupal.dirtyForms || {
   warning: Drupal.t('Your changes will be lost if you leave this page now.'),
   isSubmitted: false,
+  _alert: function() {},
   _excludedElementTypes: ['submit', 'button', 'reset', 'image', 'file'],
   _savedElements: {},
   _WYSIWYG: {}
@@ -58,7 +64,7 @@ Drupal.dirtyForms.isDirty = function() {
   for (var formId in currentForms) {
     // Check whether this form was present when state was saved.
     if (this._savedElements[formId] == undefined) {
-      //alert('The form "'+ formId +'" was not processed initially.');
+      this._alert('The form "'+ formId +'" was not processed initially.');
       return true;
     }
   }
@@ -66,24 +72,24 @@ Drupal.dirtyForms.isDirty = function() {
   for (var formId in this._savedElements) {
     // Check whether this form is not present in the document.
     if (currentForms[formId] == undefined) {
-      //alert('Could not find processed form "'+ formId +'"');
+      this._alert('Could not find processed form "'+ formId +'"');
       return true;
     }
 
     // Now let's compare element values.
     var currentElements = this._getElements(currentForms[formId]);
     var savedElements = this._savedElements[formId];
-    //alert('currentElements['+ formId +']: "'+ currentElements.toSource());
-    //alert('savedElements['+ formId +']: "'+ savedElements.toSource());
+    //this._alert('currentElements['+ formId +']: "'+ currentElements.toSource());
+    //this._alert('savedElements['+ formId +']: "'+ savedElements.toSource());
     for (var elementId in savedElements) {
       // Check whether a saved element still exists in the form.
       if (!currentElements.hasOwnProperty(elementId)) {
-        //alert('Could not find the element "'+ elementId +'" in the form "'+ formId +'"');
+        this._alert('Could not find the element "'+ elementId +'" in the form "'+ formId +'"');
         return true;
       }
       // Check whether the value of the element has been changed.
       if (this._isElementChanged(currentElements[elementId], savedElements[elementId])) {
-        //alert('The element "'+ elementId +'" in the form "'+ formId +'" has been changed.\n\nSaved value: '+ savedElements[elementId].toString() +'\nCurrent value: '+ currentElements[elementId].toString());
+        this._alert('The element "'+ elementId +'" in the form "'+ formId +'" has been changed.\n\nSaved value: '+ savedElements[elementId].toSource() +'\n\nCurrent value: '+ currentElements[elementId].toSource());
         return true;
       }
     }
@@ -91,7 +97,7 @@ Drupal.dirtyForms.isDirty = function() {
     for (var elementId in currentElements) {
       // Check whether a new element was not present in the original form.
       if (!savedElements.hasOwnProperty(elementId)) {
-        //alert('The element "'+ elementId +'" in the form "'+ formId +'" was not processed initially.');
+        this._alert('The element "'+ elementId +'" in the form "'+ formId +'" was not processed initially.');
         return true;
       }
     }
@@ -303,7 +309,7 @@ Drupal.dirtyForms._WYSIWYG.isEditor = function(element) {
       return {type: 'FCKeditor', editor: editor, element: element};
     }
   }
-  if (YAHOO && YAHOO.widget && YAHOO.widget.EditorInfo && YAHOO.widget.EditorInfo.getEditorById) {
+  if (typeof YAHOO == 'object' && typeof YAHOO.widget == 'object' && typeof YAHOO.widget.EditorInfo == 'object' && typeof YAHOO.widget.EditorInfo.getEditorById == 'function') {
     if (editor = YAHOO.widget.EditorInfo.getEditorById(element.id)) {
       return {type: 'yui', editor: editor, element: element};
     }
