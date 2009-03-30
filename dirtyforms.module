@@ -50,7 +50,6 @@ function dirtyforms_is_form_excluded($form_id, &$form) {
   return FALSE;
 }
 
-
 /**
  * Add the dirtyForms javascript to the page (just once).
  */

@@ -19,7 +19,7 @@
  * Forms and form elements added or removed dynamically, if not excluded by any
  * of the above mentioned rules, are considered dirty.
  *
- * @TODO: Rebuild the state of saved form that are submitted dynamically, or
+ * @TODO: Rebuild the state of saved forms that are submitted dynamically, or
  * explore how ajax forms are affected and/or affect dirty state checking.
  */
 
@@ -44,7 +44,9 @@ Drupal.behaviors.dirtyForms = function(context) {
 Drupal.dirtyForms = Drupal.dirtyForms || {
   warning: Drupal.t('If you leave this page now your changes will be lost.'),
   isSubmitted: false,
-  _savedElements: {}
+  _excludedElementTypes: ['submit', 'button', 'reset', 'image', 'file'],
+  _savedElements: {},
+  _WYSIWYG: {}
 };
 
 /**
@@ -56,6 +58,7 @@ Drupal.dirtyForms.isDirty = function() {
   for (var formId in currentForms) {
     // Check whether this form was present when state was saved.
     if (this._savedElements[formId] == undefined) {
+      //alert('The form "'+ formId +'" was not processed initially.');
       return true;
     }
   }
@@ -63,26 +66,39 @@ Drupal.dirtyForms.isDirty = function() {
   for (var formId in this._savedElements) {
     // Check whether this form is not present in the document.
     if (currentForms[formId] == undefined) {
+      //alert('Could not find processed form "'+ formId +'"');
       return true;
     }
 
     // Now let's compare element values.
     var currentElements = this._getElements(currentForms[formId]);
     var savedElements = this._savedElements[formId];
-    for (var name in savedElements) {
+    //alert('currentElements['+ formId +']: "'+ currentElements.toSource());
+    //alert('savedElements['+ formId +']: "'+ savedElements.toSource());
+    for (var elementId in savedElements) {
       // Check whether a saved element still exists in the form.
-      if (currentElements[name] == undefined) {
+      if (!currentElements.hasOwnProperty(elementId)) {
+        //alert('Could not find the element "'+ elementId +'" in the form "'+ formId +'"');
         return true;
       }
       // Check whether the value of the element has been changed.
-      if (currentElements[name] != savedElements[name]) {
-        return true;
+      if (currentElements[elementId] != savedElements[elementId]) {
+        var isDirty = true;
+        // Perform special processing for WYSIWYG Textareas.
+        if (this._WYSIWYG.isEditor(elementId) && !this._WYSIWYG.isDirty(elementId)) {
+          isDirty = false;
+        }
+        if (isDirty) {
+          //alert('The element "'+ elementId +'" in the form "'+ formId +'" has been changed.\n\nSaved value: '+ savedElements[elementId].toString() +'\n\nCurrent value: '+ currentElements[elementId].toString());
+          return true;
+        }
       }
     }
 
-    for (var name in currentElements) {
+    for (var elementId in currentElements) {
       // Check whether a new element was not present in the original form.
-      if (savedElements[name] == undefined) {
+      if (!savedElements.hasOwnProperty(elementId)) {
+        //alert('The element "'+ elementId +'" in the form "'+ formId +'" was not processed initially.');
         return true;
       }
     }
@@ -204,13 +220,18 @@ Drupal.dirtyForms._getElements = function(form) {
   for (var i = 0; i < form.elements.length; i++) {
     var element = form.elements[i];
 
-    // Exclude certain types of form elements.
-    if ($.inArray(element.type, ['submit', 'button', 'reset', 'image', 'file']) >= 0) {
+    // Exclude nameless elements (considered client-side only).
+    if (typeof element.name != 'string' || element.name.length <= 0) {
       continue;
     }
 
-    // Exclude nameless elements (considered client-side only).
-    if (typeof element.name != 'string' || element.name.length <= 0) {
+    // Also, exclude elements that do not have an ID.
+    if (typeof element.id != 'string' || element.id.length <= 0) {
+      continue;
+    }
+
+    // Exclude certain types of form elements.
+    if ($.inArray(element.type, this._excludedElementTypes) >= 0) {
       continue;
     }
 
@@ -219,7 +240,7 @@ Drupal.dirtyForms._getElements = function(form) {
       continue;
     }
 
-    elements[element.name] = this._getElementValue(element);
+    elements[element.id] = this._getElementValue(element);
   }
   return elements;
 };
@@ -241,4 +262,32 @@ Drupal.dirtyForms._getElementValue = function(element) {
     return null;
   }
   return element.value;
+};
+
+/**
+ * Find out if the element is a WYSIWYG Textarea.
+ */
+Drupal.dirtyForms._WYSIWYG.isEditor = function(elementId) {
+  if (tinyMCE != undefined) {
+    var editor = tinyMCE.get(elementId);
+    if (editor && editor.isDirty) {
+      return true;
+    }
+  }
+  // @TODO: Add support for more WYSIWYG editors.
+  return false;
+};
+
+/**
+ * Find out if a WYSIWYG Textarea has been modified.
+ */
+Drupal.dirtyForms._WYSIWYG.isDirty = function(elementId) {
+  if (tinyMCE != undefined) {
+    var editor = tinyMCE.get(elementId);
+    if (editor && editor.isDirty && editor.isDirty()) {
+      return true;
+    }
+  }
+  // @TODO: Add support for more WYSIWYG editors.
+  return false;
 };
