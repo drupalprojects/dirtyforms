@@ -287,7 +287,13 @@ Drupal.dirtyForms._WYSIWYG.isEditor = function(element) {
   if (typeof tinyMCE == 'object' && typeof tinyMCE.get == 'function') {
     var editor = tinyMCE.get(element.id);
     if (editor && editor.isDirty) {
-      return {type: 'tinymce', editor: editor, element: element};
+      return {type: 'TinyMCE', editor: editor, element: element};
+    }
+  }
+  if (typeof FCKeditorAPI == 'object' && typeof FCKeditorAPI.GetInstance == 'function') {
+    var editor = FCKeditorAPI.GetInstance(element.id);
+    if (editor && editor.isDirty) {
+      return {type: 'FCKeditor', editor: editor, element: element};
     }
   }
   // @TODO: Add support for more WYSIWYG editors.
@@ -298,7 +304,8 @@ Drupal.dirtyForms._WYSIWYG.isEditor = function(element) {
  * Find out if a WYSIWYG Textarea has been modified.
  */
 Drupal.dirtyForms._WYSIWYG.isDirty = function(editorInfo) {
-  if (editorInfo.type == 'tinymce') {
+  if ($.inArray(editorInfo.type, ['TinyMCE', 'FCKeditor'])) {
+    // Same interface for both editors.
     if (editorInfo.editor.isDirty()) {
       return true;
     }
