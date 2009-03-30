@@ -82,16 +82,9 @@ Drupal.dirtyForms.isDirty = function() {
         return true;
       }
       // Check whether the value of the element has been changed.
-      if (currentElements[elementId] != savedElements[elementId]) {
-        var isDirty = true;
-        // Perform special processing for WYSIWYG Textareas.
-        if (this._WYSIWYG.isEditor(elementId) && !this._WYSIWYG.isDirty(elementId)) {
-          isDirty = false;
-        }
-        if (isDirty) {
-          //alert('The element "'+ elementId +'" in the form "'+ formId +'" has been changed.\n\nSaved value: '+ savedElements[elementId].toString() +'\n\nCurrent value: '+ currentElements[elementId].toString());
-          return true;
-        }
+      if (this._isElementChanged(currentElements[elementId], savedElements[elementId])) {
+        //alert('The element "'+ elementId +'" in the form "'+ formId +'" has been changed.\n\nSaved value: '+ savedElements[elementId].toString() +'\nCurrent value: '+ currentElements[elementId].toString());
+        return true;
       }
     }
 
@@ -240,7 +233,12 @@ Drupal.dirtyForms._getElements = function(form) {
       continue;
     }
 
-    elements[element.id] = this._getElementValue(element);
+    elements[element.id] = {
+      id: element.id,
+      name: element.name,
+      type: element.type,
+      value: this._getElementValue(element)
+    };
   }
   return elements;
 };
@@ -265,13 +263,31 @@ Drupal.dirtyForms._getElementValue = function(element) {
 };
 
 /**
+ * Compare an element against its saved version.
+ */
+Drupal.dirtyForms._isElementChanged = function(currentElement, savedElement) {
+  if (currentElement.value != savedElement.value) {
+    // Perform special processing for WYSIWYG Textareas.
+    var editorInfo;
+    if ((editorInfo = this._WYSIWYG.isEditor(currentElement)) && !this._WYSIWYG.isDirty(editorInfo)) {
+      return false;
+    }
+    return true;
+  }
+  return false;
+};
+
+/**
  * Find out if the element is a WYSIWYG Textarea.
  */
-Drupal.dirtyForms._WYSIWYG.isEditor = function(elementId) {
+Drupal.dirtyForms._WYSIWYG.isEditor = function(element) {
+  if (element.type != 'textarea') {
+    return false;
+  }
   if (tinyMCE != undefined) {
-    var editor = tinyMCE.get(elementId);
+    var editor = tinyMCE.get(element.id);
     if (editor && editor.isDirty) {
-      return true;
+      return {type: 'tinymce', editor: editor, element: element};
     }
   }
   // @TODO: Add support for more WYSIWYG editors.
@@ -281,10 +297,9 @@ Drupal.dirtyForms._WYSIWYG.isEditor = function(elementId) {
 /**
  * Find out if a WYSIWYG Textarea has been modified.
  */
-Drupal.dirtyForms._WYSIWYG.isDirty = function(elementId) {
-  if (tinyMCE != undefined) {
-    var editor = tinyMCE.get(elementId);
-    if (editor && editor.isDirty && editor.isDirty()) {
+Drupal.dirtyForms._WYSIWYG.isDirty = function(editorInfo) {
+  if (editorInfo.type == 'tinymce') {
+    if (editorInfo.editor.isDirty()) {
       return true;
     }
   }
