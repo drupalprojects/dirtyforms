@@ -38,17 +38,26 @@ function dirtyforms_menu() {
  */
 function dirtyforms_form_alter(&$form, $form_state, $form_id) {
   static $settings;
+
+  // Skip processing when maintenance mode is on.
+  if (defined('MAINTENANCE_MODE')) {
+    return;
+  }
+
+  // Load module settings just once per execution cycle.
   if (!isset($settings)) {
     $settings = _dirtyforms_get_settings();
   }
-  if ($settings['form_ids_policy'] == 'blacklist') {
-    if (_dirtyforms_match_rules($form_id, $settings['form_ids_rules'])) {
+
+  // Exclude forms based on configured policy.
+  if ($settings['forms']['policy'] == 'blacklist') {
+    if (_dirtyforms_match_rules($form_id, $settings['forms']['rules'])) {
       _dirtyforms_exclude_form($form);
     }
     _dirtyforms_add_js($settings);
   }
-  elseif ($settings['form_ids_policy'] == 'whitelist') {
-    if (!_dirtyforms_match_rules($form_id, $settings['form_ids_rules'])) {
+  elseif ($settings['forms']['policy'] == 'whitelist') {
+    if (!_dirtyforms_match_rules($form_id, $settings['forms']['rules'])) {
       _dirtyforms_exclude_form($form);
     }
     _dirtyforms_add_js($settings);
@@ -59,16 +68,23 @@ function dirtyforms_form_alter(&$form, $form_state, $form_id) {
  * Add the dirtyForms javascript to the page (just once).
  */
 function _dirtyforms_add_js($settings) {
-  static $added = FALSE;
-  if (!$added) {
-    $added = TRUE;
-    if ($settings['troubleshooting_alerts']) {
-      $js_settings = array(
-        'troubleshooting_alerts' => $settings['troubleshooting_alerts'],
-      );
-      drupal_add_js(array('dirtyForms' => $js_settings), 'setting');
-    }
+  static $ready;
+  if (!isset($ready)) {
+    $ready = TRUE;
+
+    // Add the onBeforeUnload API.
+    onbeforeunload_add_js();
+
+    // Add the dirtyForms behavior.
     drupal_add_js(drupal_get_path('module', 'dirtyforms') .'/dirtyforms.js');
+
+    // Add javascript settings.
+    $js_settings = array(
+      'troubleshooting' => array(
+        'alerts' => $settings['troubleshooting']['alerts'],
+      ),
+    );
+    drupal_add_js(array('dirtyForms' => $js_settings), 'setting');
   }
 }
 
@@ -77,7 +93,8 @@ function _dirtyforms_add_js($settings) {
  */
 function _dirtyforms_match_rules($string, $rules) {
   foreach ($rules as $rule) {
-    if (preg_match('`^'. str_replace('*', '.*', $rule) .'$`', $string)) {
+    $rule = str_replace(array('-', '_'), '[-_]', str_replace('*', '.*', $rule));
+    if (preg_match('`^'. $rule .'$`', $string)) {
       return TRUE;
     }
   }
@@ -104,14 +121,18 @@ function _dirtyforms_exclude_form(&$form) {
  */
 function _dirtyforms_get_settings() {
   return array(
-    'form_ids_policy' => variable_get('dirtyforms_form_ids_policy', 'blacklist'),
-    'form_ids_rules' => variable_get('dirtyforms_form_ids_rules', array(
-      'search_theme*',
-      'search_block*',
-      'user_login*',
-      'user_register*',
-      'user_pass*',
-    )),
-    'troubleshooting_alerts' => variable_get('dirtyforms_troubleshooting_alerts', 0),
+    'forms' => array(
+      'policy' => variable_get('dirtyforms_forms_policy', 'blacklist'),
+      'rules' => variable_get('dirtyforms_forms_rules', array(
+        'search_theme*',
+        'search_block*',
+        'user_login*',
+        'user_register*',
+        'user_pass*',
+      )),
+    ),
+    'troubleshooting' => array(
+      'alerts' => variable_get('dirtyforms_troubleshooting_alerts', 0),
+    ),
   );
 }

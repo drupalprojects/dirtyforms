@@ -32,8 +32,8 @@ Drupal.behaviors.dirtyForms = function(context) {
     Drupal.onBeforeUnload.addCallback('dirtyforms', Drupal.dirtyForms._onBeforeUnload);
 
     // Troubleshooting...
-    if (Drupal.settings.dirtyForms && Drupal.settings.dirtyForms.troubleshooting_alerts) {
-      Drupal.dirtyForms._alert = function(m) { alert(m) };
+    if (Drupal.settings.dirtyForms.troubleshooting.alerts) {
+      Drupal.dirtyForms._alert = function(message) { alert(message) };
     }
 
     // Save state of all non-excluded forms in the document.
