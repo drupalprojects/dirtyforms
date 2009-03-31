@@ -85,6 +85,11 @@ function _dirtyforms_add_js($settings) {
       ),
     );
     drupal_add_js(array('dirtyForms' => $js_settings), 'setting');
+
+    // Provide visual indication of excluded forms?
+    if ($settings['troubleshooting']['highlight']) {
+      drupal_add_css(drupal_get_path('module', 'dirtyforms') .'/dirtyforms.css');
+    }
   }
 }
 
@@ -133,6 +138,7 @@ function _dirtyforms_get_settings() {
     ),
     'troubleshooting' => array(
       'alerts' => variable_get('dirtyforms_troubleshooting_alerts', 0),
+      'highlight' => variable_get('dirtyforms_troubleshooting_highlight', 0),
     ),
   );
 }

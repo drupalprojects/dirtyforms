@@ -40,7 +40,7 @@ function dirtyforms_admin_settings() {
     '#type' => 'fieldset',
     '#title' => t('Troubleshooting'),
     '#collapsible' => TRUE,
-    '#collapsed' => !$settings['troubleshooting']['alerts'],
+    '#collapsed' => !$settings['troubleshooting']['alerts'] && !$settings['troubleshooting']['highlight'],
     '#description' => t('Options for helping track issues with the client-side code.'),
   );
   $form['troubleshooting']['dirtyforms_troubleshooting_alerts'] = array(
@@ -48,6 +48,12 @@ function dirtyforms_admin_settings() {
     '#title' => t('Enable javascript alerts'),
     '#default_value' => $settings['troubleshooting']['alerts'],
     '#description' => t('When this option is enabled, an alert will tell you additional information about the element that caused the onBeforeUnload dialog to appear.'),
+  );
+  $form['troubleshooting']['dirtyforms_troubleshooting_highlight'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Highlight excluded forms'),
+    '#default_value' => $settings['troubleshooting']['highlight'],
+    '#description' => t('Enable this option to provide a visual indication of forms that have been excluded from dirtyForms behavior processing. In fact, you can configure the CSS class <strong>dirtyforms-exclude</strong> as you wish. This option merely emits a stylesheet provided by the module itself with this class already configured to show excluded forms with a red border.'),
   );
   $form = system_settings_form($form);
   if (!isset($form['#validate'])) {

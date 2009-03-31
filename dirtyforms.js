@@ -52,7 +52,7 @@ Drupal.dirtyForms = Drupal.dirtyForms || {
   _alert: function() {},
   _excludedElementTypes: ['submit', 'button', 'reset', 'image', 'file'],
   _savedElements: {},
-  _WYSIWYG: {}
+  _wysiwyg: {}
 };
 
 /**
@@ -253,17 +253,20 @@ Drupal.dirtyForms._getElements = function(form) {
  * Get the value of a form element.
  */
 Drupal.dirtyForms._getElementValue = function(element) {
-  if (element.type == 'checkbox') {
-    return (element.checked ? element.value : null);
-  }
-  if (element.type == 'radio') {
-    var radio = element.form.elements[element.name];
-    for (var i = 0; i < radio.length; i++) {
-      if (radio[i].checked) {
-        return radio[i].value;
+  switch (element.type) {
+    case 'checkbox':
+      return (element.checked ? element.value : null);
+    case 'radio':
+      var radio = element.form.elements[element.name];
+      for (var i = 0; i < radio.length; i++) {
+        if (radio[i].checked) {
+          return radio[i].value;
+        }
       }
-    }
-    return null;
+      return null;
+    case 'textarea':
+      var wysiwygInfo = this._wysiwyg.isEditor(element);
+      return (wysiwygInfo ? this._wysiwyg.getContents(wysiwygInfo) : element.value);
   }
   return element.value;
 };
@@ -272,15 +275,7 @@ Drupal.dirtyForms._getElementValue = function(element) {
  * Compare an element against its saved version.
  */
 Drupal.dirtyForms._isElementChanged = function(currentElement, savedElement) {
-  if (currentElement.value != savedElement.value) {
-    // Perform special processing for WYSIWYG Textareas.
-    var editorInfo;
-    if ((editorInfo = this._WYSIWYG.isEditor(currentElement)) && !this._WYSIWYG.isDirty(editorInfo)) {
-      return false;
-    }
-    return true;
-  }
-  return false;
+  return (currentElement.value != savedElement.value);
 };
 
 /**
@@ -294,23 +289,20 @@ Drupal.dirtyForms._isElementChanged = function(currentElement, savedElement) {
  * @link http://developer.yahoo.com/yui/docs/YAHOO.widget.EditorInfo.html
  * @link http://developer.yahoo.com/yui/docs/YAHOO.widget.SimpleEditor.html
  */
-Drupal.dirtyForms._WYSIWYG.isEditor = function(element) {
+Drupal.dirtyForms._wysiwyg.isEditor = function(element) {
   var editor;
-  if (element.type != 'textarea') {
-    return false;
-  }
   if (typeof tinyMCE == 'object' && typeof tinyMCE.get == 'function') {
-    if ((editor = tinyMCE.get(element.id)) && editor.isDirty) {
+    if ((editor = tinyMCE.get(element.id)) && typeof editor.getContent == 'function') {
       return {type: 'TinyMCE', editor: editor, element: element};
     }
   }
   if (typeof FCKeditorAPI == 'object' && typeof FCKeditorAPI.GetInstance == 'function') {
-    if ((editor = FCKeditorAPI.GetInstance(element.id)) && editor.isDirty) {
+    if ((editor = FCKeditorAPI.GetInstance(element.id)) && typeof editor.GetData == 'function') {
       return {type: 'FCKeditor', editor: editor, element: element};
     }
   }
   if (typeof YAHOO == 'object' && typeof YAHOO.widget == 'object' && typeof YAHOO.widget.EditorInfo == 'object' && typeof YAHOO.widget.EditorInfo.getEditorById == 'function') {
-    if (editor = YAHOO.widget.EditorInfo.getEditorById(element.id)) {
+    if ((editor = YAHOO.widget.EditorInfo.getEditorById(element.id)) && typeof editor.saveHTML == 'function') {
       return {type: 'yui', editor: editor, element: element};
     }
   }
@@ -318,19 +310,19 @@ Drupal.dirtyForms._WYSIWYG.isEditor = function(element) {
 };
 
 /**
- * Find out if a WYSIWYG Textarea has been modified.
+ * Get the contents of a WYSIWYG Textarea.
  */
-Drupal.dirtyForms._WYSIWYG.isDirty = function(editorInfo) {
-  if ($.inArray(editorInfo.type, ['TinyMCE', 'FCKeditor'])) {
-    // Same interface for both editors.
-    if (editorInfo.editor.isDirty()) {
-      return true;
-    }
+Drupal.dirtyForms._wysiwyg.getContents = function(wysiwygInfo) {
+  if (wysiwygInfo.type == 'TinyMCE') {
+    return wysiwygInfo.editor.getContent();
   }
-  else if (editorInfo.type == 'yui') {
-    if (editorInfo.editor.editorDirty) {
-      return true;
-    }
+  else if (wysiwygInfo.type == 'FCKeditor') {
+    return wysiwygInfo.editor.GetData();
   }
-  return false;
+  else if (wysiwygInfo.type == 'yui') {
+    // Cleans the HTML with the cleanHTML method then places that string
+    // back into the textarea.
+    wysiwygInfo.editor.saveHTML();
+  }
+  return wysiwygInfo.element.value;
 };
