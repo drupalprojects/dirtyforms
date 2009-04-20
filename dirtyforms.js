@@ -49,7 +49,7 @@ Drupal.behaviors.dirtyForms = function(context) {
 Drupal.dirtyForms = Drupal.dirtyForms || {
   warning: Drupal.t('Your changes will be lost if you leave this page now.'),
   isSubmitted: false,
-  _alert: function() {},
+  _alert: null,
   _excludedElementTypes: ['submit', 'button', 'reset', 'image', 'file'],
   _savedElements: {},
   _wysiwyg: {}
@@ -64,7 +64,9 @@ Drupal.dirtyForms.isDirty = function() {
   for (var formId in currentForms) {
     // Check whether this form was present when state was saved.
     if (this._savedElements[formId] == undefined) {
-      this._alert('The form "'+ formId +'" was not processed initially.');
+      if (typeof this._alert == 'function') {
+        this._alert('The form "'+ formId +'" was not processed initially.');
+      }
       return true;
     }
   }
@@ -72,7 +74,9 @@ Drupal.dirtyForms.isDirty = function() {
   for (var formId in this._savedElements) {
     // Check whether this form is not present in the document.
     if (currentForms[formId] == undefined) {
-      this._alert('Could not find processed form "'+ formId +'"');
+      if (typeof this._alert == 'function') {
+        this._alert('Could not find processed form "'+ formId +'"');
+      }
       return true;
     }
 
@@ -84,12 +88,16 @@ Drupal.dirtyForms.isDirty = function() {
     for (var elementId in savedElements) {
       // Check whether a saved element still exists in the form.
       if (!currentElements.hasOwnProperty(elementId)) {
-        this._alert('Could not find the element "'+ elementId +'" in the form "'+ formId +'"');
+        if (typeof this._alert == 'function') {
+          this._alert('Could not find the element "'+ elementId +'" in the form "'+ formId +'"');
+        }
         return true;
       }
       // Check whether the value of the element has been changed.
       if (this._isElementChanged(currentElements[elementId], savedElements[elementId])) {
-        this._alert('The element "'+ elementId +'" in the form "'+ formId +'" has been changed.\n\nSaved value: '+ savedElements[elementId].toSource() +'\n\nCurrent value: '+ currentElements[elementId].toSource());
+        if (typeof this._alert == 'function') {
+          this._alert('The element "'+ elementId +'" in the form "'+ formId +'" has been changed.\n\nSaved value: '+ savedElements[elementId].value +'\n\nCurrent value: '+ currentElements[elementId].value);
+        }
         return true;
       }
     }
@@ -97,7 +105,9 @@ Drupal.dirtyForms.isDirty = function() {
     for (var elementId in currentElements) {
       // Check whether a new element was not present in the original form.
       if (!savedElements.hasOwnProperty(elementId)) {
-        this._alert('The element "'+ elementId +'" in the form "'+ formId +'" was not processed initially.');
+        if (typeof this._alert == 'function') {
+          this._alert('The element "'+ elementId +'" in the form "'+ formId +'" was not processed initially.');
+        }
         return true;
       }
     }
