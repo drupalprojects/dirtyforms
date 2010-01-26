@@ -39,6 +39,28 @@ Drupal.behaviors.dirtyForms = function(context) {
     // Save state of all non-excluded forms in the document.
     Drupal.dirtyForms.saveState(context);
   }
+
+  // If Wysiwyg API is enabled on this page, and the browser is IE, let's
+  // disable our onBeforeUnload temporarily, when the editor is toggled.
+  // This is necessary because IE fires the onBeforeUnload event for the
+  // iFrame where the editor is located.
+  if ($.browser.msie && Drupal.wysiwygAttachToggleLink && !Drupal.dirtyForms.wysiwygAttachToggleLink) {
+    // Save reference to the original Wysiwyg API function and install our own.
+    Drupal.dirtyForms.wysiwygAttachToggleLink = Drupal.wysiwygAttachToggleLink;
+    Drupal.wysiwygAttachToggleLink = function(context, params) {
+      // Invoke the original Wysiwyg API function.
+      Drupal.dirtyForms.wysiwygAttachToggleLink(context, params);
+
+      // Now, install an onclick handler from where we temporarily disable our
+      // onBeforeUnload event handler.
+      $('.wysiwyg-toggle-wrapper').bind('click', function() {
+        Drupal.onBeforeUnload.removeCallback('dirtyforms');
+        setTimeout(function() {
+          Drupal.onBeforeUnload.addCallback('dirtyforms', Drupal.dirtyForms._onBeforeUnload);
+        }, 100);
+      });
+    };
+  }
 };
 
 /**
