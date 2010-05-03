@@ -317,6 +317,7 @@ Drupal.dirtyForms._isElementChanged = function(currentElement, savedElement) {
  *
  * @link http://wiki.moxiecode.com/index.php/TinyMCE:API/tinymce.EditorManager/get
  * @link http://wiki.moxiecode.com/index.php/TinyMCE:API/tinymce.Editor
+ * @link http://docs.cksource.com/ckeditor_api/
  * @link http://docs.fckeditor.net/FCKeditor_2.x/Developers_Guide/JavaScript_API
  * @link http://developer.yahoo.com/yui/docs/YAHOO.widget.EditorInfo.html
  * @link http://developer.yahoo.com/yui/docs/YAHOO.widget.SimpleEditor.html
@@ -326,6 +327,11 @@ Drupal.dirtyForms._wysiwyg.isEditor = function(element) {
   if (typeof tinyMCE == 'object' && typeof tinyMCE.get == 'function') {
     if ((editor = tinyMCE.get(element.id)) && typeof editor.getContent == 'function') {
       return {type: 'TinyMCE', editor: editor, element: element};
+    }
+  }
+  if (typeof CKEDITOR == 'object' &&  typeof CKEDITOR.editor == 'function') { 
+    if (( editor = CKEDITOR.instances[element.id] )) {
+      return {type: 'CKEDITOR', editor: editor, element: element};
     }
   }
   if (typeof FCKeditorAPI == 'object' && typeof FCKeditorAPI.GetInstance == 'function') {
@@ -347,6 +353,9 @@ Drupal.dirtyForms._wysiwyg.isEditor = function(element) {
 Drupal.dirtyForms._wysiwyg.getContents = function(wysiwygInfo) {
   if (wysiwygInfo.type == 'TinyMCE') {
     return wysiwygInfo.editor.getContent();
+  }
+  else if (wysiwygInfo.type == 'CKEDITOR') {
+    return wysiwygInfo.editor.getData();
   }
   else if (wysiwygInfo.type == 'FCKeditor') {
     return wysiwygInfo.editor.GetData();
