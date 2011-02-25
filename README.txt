@@ -1,6 +1,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Dirty Forms
-;; $Id$
 ;;
 ;; Project homepage: http://drupal.org/project/dirtyforms
 ;; Module Author: markus_petrux (http://drupal.org/user/39593)
